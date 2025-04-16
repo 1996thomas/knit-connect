@@ -27,7 +27,7 @@ import {
   fetchOrder,
   fetchProductFromDB,
   fetchShopProduct,
-} from "./fetch.server";
+} from "../lib/fetch.server";
 import { OrderFromKnit, Product } from "app/types/products";
 import { useLoaderData } from "@remix-run/react";
 import { match } from "assert";

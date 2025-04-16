@@ -1,6 +1,6 @@
 import { LoaderFunctionArgs } from "@remix-run/node";
 import React from "react";
-import { fetchPartners } from "./fetch.server";
+import { fetchPartners } from "../lib/fetch.server";
 import { Link, Outlet, useLoaderData } from "@remix-run/react";
 import {
   Avatar,

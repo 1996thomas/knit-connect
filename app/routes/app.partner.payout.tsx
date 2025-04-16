@@ -8,7 +8,7 @@ import { authenticate } from "app/shopify.server";
 import { Order } from "app/types/order";
 import { OrderFromKnit } from "app/types/products";
 import { startOfMonth, endOfMonth, format } from "date-fns";
-import { fetchOrder } from "./fetch.server";
+import { fetchOrder } from "../lib/fetch.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = process.env.WEBSITE_URL || "";

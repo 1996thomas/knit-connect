@@ -1,28 +1,16 @@
 import {
   ActionFunctionArgs,
   LoaderFunctionArgs,
-  replace,
 } from "@remix-run/node";
-import { useLoaderData, useSubmit } from "@remix-run/react";
+import { useLoaderData } from "@remix-run/react";
 import {
-  Badge,
-  BlockStack,
-  Button,
-  Card,
-  Grid,
   InlineGrid,
-  InlineStack,
-  Layout,
   Page,
-  Text,
-  Thumbnail,
 } from "@shopify/polaris";
 import { requirePartner } from "app/permissions.server";
 import { authenticate } from "app/shopify.server";
 import { Product } from "app/types/products";
-import { fetchProductFromDB, fetchShopProduct } from "./fetch.server";
-import { createShopProduct } from "./post.server";
-import { PlusIcon } from "@shopify/polaris-icons";
+import { fetchProductFromDB, fetchShopProduct } from "../lib/fetch.server";
 import PartnerProductCard from "app/components/Cards/partnerProductCard";
 import { createShopProductAction } from "app/lib/createShopProductAction";
 

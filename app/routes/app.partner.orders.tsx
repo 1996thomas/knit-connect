@@ -15,7 +15,7 @@ import {
 } from "@shopify/polaris";
 import { requirePartner } from "app/permissions.server";
 import { authenticate } from "app/shopify.server";
-import { fetchOrder } from "./fetch.server";
+import { fetchOrder } from "../lib/fetch.server";
 import { useState } from "react";
 import type { OrderFromKnit } from "app/types/products";
 import PartnerOrderCard from "app/components/Cards/partnerOrderCard";

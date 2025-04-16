@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { Card, List, Page, Text } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
-import { fetchPartners, fetchShopProduct } from "./fetch.server";
+import { fetchPartners, fetchShopProduct } from "../lib/fetch.server";
 import { useLoaderData } from "@remix-run/react";
 import { registerCarrierService } from "app/lib/carrierService";
 

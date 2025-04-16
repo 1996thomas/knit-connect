@@ -22,7 +22,7 @@ import {
 import { countryNameOptions } from "app/lib/countryNameOptions";
 import { requireAdmin } from "app/permissions.server";
 import { useCallback, useEffect, useState } from "react";
-import { fetchPartner } from "./fetch.server";
+import { fetchPartner } from "../lib/fetch.server";
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const { partner } = params;

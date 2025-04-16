@@ -20,7 +20,7 @@ import {
   fetchPartner,
   fetchProductFromDB,
   fetchShopProduct,
-} from "./fetch.server";
+} from "../lib/fetch.server";
 import { OrderFromKnit, Product } from "app/types/products";
 import { decrypt } from "app/lib/encrypt";
 import AdminProductCard from "app/components/Cards/adminProductCard";
