@@ -1,0 +1,89 @@
+import {
+  ActionFunctionArgs,
+  LoaderFunctionArgs,
+  replace,
+} from "@remix-run/node";
+import { useLoaderData, useSubmit } from "@remix-run/react";
+import {
+  Badge,
+  BlockStack,
+  Button,
+  Card,
+  Grid,
+  InlineGrid,
+  InlineStack,
+  Layout,
+  Page,
+  Text,
+  Thumbnail,
+} from "@shopify/polaris";
+import { requirePartner } from "app/permissions.server";
+import { authenticate } from "app/shopify.server";
+import { Product } from "app/types/products";
+import { fetchProductFromDB, fetchShopProduct } from "./fetch.server";
+import { createShopProduct } from "./post.server";
+import { PlusIcon } from "@shopify/polaris-icons";
+import PartnerProductCard from "app/components/Cards/partnerProductCard";
+import { createShopProductAction } from "app/lib/createShopProductAction";
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  await requirePartner(request);
+  const knitContact = process.env.KNIT_CONTACT_MAIL || "t.reynaud@99knit.com";
+  const apiVersion = process.env.API_VERSION || "";
+  const { session } = await authenticate.admin(request);
+  const shop = await prisma.partner.findUnique({
+    where: { shop: session.shop },
+  });
+
+  if (!shop) {
+    return;
+  }
+
+  const { edges } = await fetchShopProduct(
+    session.shop,
+    session.accessToken || "",
+    apiVersion,
+  );
+
+  const productsFromDB = await fetchProductFromDB(shop.id);
+  const dbProductIds = new Set(productsFromDB.map((p) => p.id));
+
+  const matchedProducts = edges
+    .filter((product: Product) => dbProductIds.has(product.node.id))
+    .map((product: Product) => {
+      const dbProduct = productsFromDB.find((p) => p.id === product.node.id);
+      return { ...product, status: dbProduct?.status };
+    });
+  return { matchedProducts, knitContact, store: session.shop };
+};
+export const action = async ({ request }: ActionFunctionArgs) => {
+  try {
+    const product = await createShopProductAction(request);
+    return product;
+  } catch (error: any) {
+    console.error("Erreur lors de la création du produit :", error);
+    return { error: error.message, status: 400 };
+  }
+};
+
+export default function page() {
+  const { matchedProducts, knitContact, store } =
+    useLoaderData<typeof loader>();
+  return (
+    <Page
+      title="Your products"
+      fullWidth
+      subtitle="Here is the list of products requested by the Knit store, click on Add to Knit when everything is ready for you. If you made modification on a product, just click on Update button. Once listed, if you got any problem with a product, click on  Report problem."
+    >
+      <InlineGrid gap={"200"} columns={{ xs: 1, sm: 1, md: 2, lg: 4 }}>
+        {matchedProducts.map((item: Product) => (
+          <PartnerProductCard
+            item={item}
+            knitContact={knitContact}
+            store={store}
+          />
+        ))}
+      </InlineGrid>
+    </Page>
+  );
+}

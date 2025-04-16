@@ -1,0 +1,40 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "d8e0c006b061d773f74071863d6174d7"
+application_url = "https://adipex-stem-trust-winston.trycloudflare.com"
+embedded = true
+name = "international-upside-app"
+handle = "international-upside-app-5"
+
+[build]
+include_config_on_deploy = true
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2025-01"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "inventory_levels/update" ]
+  uri = "https://knit-website-ashen.vercel.app/api/webhook/inventory-levels-update"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products,read_files,write_files,read_products,write_orders,read_assigned_fulfillment_orders,read_orders,read_locales,read_inventory,write_inventory,write_fulfillments,read_fulfillments, write_customers, read_customers, write_shipping, read_locations"
+
+[auth]
+redirect_urls = [
+  "https://adipex-stem-trust-winston.trycloudflare.com/auth/callback",
+  "https://adipex-stem-trust-winston.trycloudflare.com/auth/shopify/callback",
+  "https://adipex-stem-trust-winston.trycloudflare.com/api/auth/callback"
+]
+
+[pos]
+embedded = false
