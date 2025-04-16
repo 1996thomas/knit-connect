@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "d8e0c006b061d773f74071863d6174d7"
-application_url ="https://knit-connect.fly.dev/"
+application_url ="https://knit-connect-production.up.railway.app/"
 embedded = true
 name = "international-upside-app"
 handle = "international-upside-app-5"
@@ -31,9 +31,9 @@ scopes = "write_products,read_files,write_files,read_products,write_orders,read_
 
 [auth]
 redirect_urls = [
-  "https://knit-connect.fly.dev/auth/callback",
-  "https://knit-connect.fly.dev/auth/shopify/callback",
-  "https://knit-connect.fly.dev/api/auth/callback"
+  "https://knit-connect-production.up.railway.app/auth/callback",
+  "https://knit-connect-production.up.railway.app/auth/shopify/callback",
+  "https://knit-connect-production.up.railway.app/api/auth/callback"
 ]
 
 [pos]
