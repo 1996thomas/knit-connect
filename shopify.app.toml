@@ -23,7 +23,7 @@ api_version = "2025-01"
 
   [[webhooks.subscriptions]]
   topics = [ "inventory_levels/update" ]
-  uri = "https://knit-website-ashen.vercel.app/api/webhook/inventory-levels-update"
+  uri = "https://knit-connect.fly.dev/api/webhook/inventory-levels-update"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes

@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for knit-connect on 2025-04-16T14:43:31Z
+# fly.toml app configuration file generated for knit-connect-late-leaf-2716 on 2025-04-16T17:31:46+02:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'knit-connect'
+app = 'knit-connect-late-leaf-2716'
 primary_region = 'ams'
 
 [build]
