@@ -1,6 +1,6 @@
 // app/actions/shopProductActions.server.ts
 import { authenticate } from "app/shopify.server";
-import { createShopProduct } from "app/routes/post.server"; // ou le chemin correct vers votre fonction
+import { createShopProduct } from "./post.server";
 
 export async function createShopProductAction(request: Request) {
   const { session } = await authenticate.admin(request);
