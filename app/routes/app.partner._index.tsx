@@ -13,11 +13,7 @@ import {
   Badge,
   InlineStack,
 } from "@shopify/polaris";
-import {
-  InfoIcon,
-  OrderIcon,
-  ReceiptIcon,
-} from "@shopify/polaris-icons";
+import { InfoIcon, OrderIcon, ReceiptIcon } from "@shopify/polaris-icons";
 
 import { authenticate } from "../shopify.server";
 import { requirePartner } from "app/permissions.server";
@@ -70,6 +66,17 @@ export const loader: LoaderFunction = async ({ request }) => {
   });
   if (!knitRes.ok) throw new Response("Erreur Knit", { status: 502 });
   const partnerFromKnit = await knitRes.json();
+  if (!partnerFromKnit || !partnerFromKnit?.existingPartner) {
+    console.warn("Knit n'a pas renvoyé existingPartner", partnerFromKnit);
+    return json({
+      matchedProducts: [],
+      knitContact,
+      store: shop,
+      filteredOrder: [],
+      pending: true,
+      partnerFromKnit: null,
+    });
+  }
 
   // Produits Shopify vs DB
   const token = decrypt(partner.accessToken || "");
