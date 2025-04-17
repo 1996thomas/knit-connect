@@ -22,55 +22,48 @@ export const loader: LoaderFunction = async ({ request }) => {
   let isSynced = false;
 
   if (!isAdmin) {
-    // 1. Récupère l’état du partenaire chez Knit
-    const res1 = await fetch(`${url}/api/knit-connect/get-partner`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ shop }),
-    });
-    if (!res1.ok) {
-      throw new Response("Erreur Knit Connect", { status: 502 });
-    }
-    const data1 = await res1.json();
-    const existing = data1?.existingPartner;
-
-    // 2. Si déjà actif → synced
-    if (existing?.status === "ACTIVE") {
-      isSynced = true;
-    }
-    // 3. Si pending → on crée en base et on re‑check
-    else if (existing?.status === "PENDING") {
-      // génère la clé chiffrée
-      const key = encrypt(session.accessToken || "");
-
-      // appelle l’endpoint de création chez Knit
-      const res2 = await fetch(`${url}/api/knit-connect/partner-connect`, {
+    // 1. Essaye de récupérer l'état du partner chez Knit
+    let existing: { status?: string } | undefined;
+    try {
+      const res1 = await fetch(`${url}/api/knit-connect/get-partner`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ shop, key }),
+        body: JSON.stringify({ shop }),
       });
-      if (!res2.ok) {
-        throw new Response("Erreur Partner Connect", { status: 502 });
-      }
-      const data2 = await res2.json();
+      const data1 = await res1.json();
+      existing = data1?.existingPartner;
+    } catch (e) {
+      console.warn("⚠️ Erreur fetch get-partner, on considère non synchronisé", e);
+    }
 
-      // crée le partenaire en local
-      await prisma.partner.create({
-        data: { shop, accessToken: key },
-      });
-
-      // re‑vérifie l’état retourné
-      if (data2?.existingPartner?.status === "ACTIVE") {
-        isSynced = true;
+    // 2. Si actif, on marque synced
+    if (existing?.status === "ACTIVE") {
+      isSynced = true;
+    }
+    // 3. Si pending, on tente la création et on re-vérifie
+    else if (existing?.status === "PENDING") {
+      const key = encrypt(session.accessToken || "");
+      try {
+        const res2 = await fetch(`${url}/api/knit-connect/partner-connect`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ shop, key }),
+        });
+        const data2 = await res2.json();
+        await prisma.partner.create({ data: { shop, accessToken: key } });
+        if (data2?.existingPartner?.status === "ACTIVE") {
+          isSynced = true;
+        }
+      } catch (e) {
+        console.warn("⚠️ Erreur partner-connect ou DB, on reste non synchronisé", e);
       }
     }
-    // sinon existing undefined ou autre statut → reste false
   }
 
   return json<LoaderData>({ isAdmin, isSynced });
@@ -84,18 +77,14 @@ export default function Index() {
       title="Welcome to Knit Connect"
       description="This application is reserved for exclusive partners of the Knit platform."
       primaryAction={{
-        content: "Admin Access Knit-Connect",
+        content: "Admin Access Knit‑Connect",
         url: "/app/admin",
       }}
     >
       <img
         alt="Knit logo"
         src="/logo.png"
-        style={{
-          objectFit: "contain",
-          width: "100%",
-          height: "auto",
-        }}
+        style={{ objectFit: "contain", width: "100%", height: "auto" }}
       />
     </MediaCard>
   ) : (
@@ -104,18 +93,14 @@ export default function Index() {
       description="This application is reserved for exclusive partners of the Knit platform."
       primaryAction={{
         disabled: !isSynced,
-        content: "Partner Access Knit-Connect",
+        content: "Partner Access Knit‑Connect",
         url: "/app/partner",
       }}
     >
       <img
         alt="Knit logo"
         src="/logo.png"
-        style={{
-          objectFit: "contain",
-          width: "100%",
-          height: "auto",
-        }}
+        style={{ objectFit: "contain", width: "100%", height: "auto" }}
       />
     </MediaCard>
   );
