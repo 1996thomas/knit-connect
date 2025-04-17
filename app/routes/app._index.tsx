@@ -1,11 +1,10 @@
 // routes/app/_index/route.tsx
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { redirect } from "@remix-run/node";
-import { Link, useLoaderData } from "@remix-run/react";
+import {  useLoaderData } from "@remix-run/react";
 import { MediaCard, Page } from "@shopify/polaris";
 import { encrypt } from "app/lib/encrypt";
-import { requireAdmin, requirePartner } from "app/permissions.server";
 import { authenticate } from "app/shopify.server";
+import prisma from "../db.server"
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);

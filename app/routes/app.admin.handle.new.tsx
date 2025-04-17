@@ -1,8 +1,4 @@
-import {
-  ActionFunctionArgs,
-  LoaderFunctionArgs,
-  redirect,
-} from "@remix-run/node";
+import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useActionData, useNavigate } from "@remix-run/react";
 import {
   Badge,
@@ -17,6 +13,7 @@ import {
 import { countryNameOptions } from "app/lib/countryNameOptions";
 import { requireAdmin } from "app/permissions.server";
 import { useCallback, useEffect, useState } from "react";
+import prisma from "../db.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   await requireAdmin(request);

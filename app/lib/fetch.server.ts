@@ -1,5 +1,6 @@
 import { ORDER_QUERY } from "app/queries/orders/orders";
 import { PRODUCTS_QUERY } from "app/queries/products/products";
+import prisma from '../db.server'
 
 export async function fetchShopProduct(
   shop: string,

@@ -1,17 +1,12 @@
-import {
-  ActionFunctionArgs,
-  LoaderFunctionArgs,
-} from "@remix-run/node";
+import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-import {
-  InlineGrid,
-  Page,
-} from "@shopify/polaris";
+import { InlineGrid, Page } from "@shopify/polaris";
 import { requirePartner } from "app/permissions.server";
 import { authenticate } from "app/shopify.server";
 import { Product } from "app/types/products";
 import { fetchProductFromDB, fetchShopProduct } from "../lib/fetch.server";
 import PartnerProductCard from "app/components/Cards/partnerProductCard";
+import prisma from "../db.server";
 import { createShopProductAction } from "app/lib/createShopProductAction";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {

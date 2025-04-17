@@ -7,19 +7,14 @@ import {
   Grid,
   InlineGrid,
   Button,
-  ResourceList,
   Badge,
-  Icon,
   InlineStack,
-  Scrollable,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import { requirePartner } from "app/permissions.server";
 import {
-  AlertTriangleIcon,
   InfoIcon,
   OrderIcon,
-  PlusCircleIcon,
   ProductAddIcon,
   ReceiptIcon,
 } from "@shopify/polaris-icons";
@@ -30,14 +25,14 @@ import {
 } from "../lib/fetch.server";
 import { OrderFromKnit, Product } from "app/types/products";
 import { useLoaderData } from "@remix-run/react";
-import { match } from "assert";
 import PartnerProductCard from "app/components/Cards/partnerProductCard";
 import { useEffect, useState } from "react";
 import { createShopProductAction } from "app/lib/createShopProductAction";
 import PartnerOrderCard from "app/components/Cards/partnerOrderCard";
 import { Order } from "app/types/order";
-import { decrypt, encrypt } from "app/lib/encrypt";
+import { decrypt } from "app/lib/encrypt";
 import PartnerInfoCard from "app/components/Cards/partnerInformationCard";
+import prisma from "../db.server";
 
 const url = process.env.WEBSITE_URL || "";
 const token = process.env.WEBSITE_TOKEN || "";

@@ -1,5 +1,5 @@
-import { decrypt } from "app/lib/encrypt";
 import { Product, Variant } from "app/types/products";
+import prisma from "../db.server";
 
 export async function postProduct({
   productId,

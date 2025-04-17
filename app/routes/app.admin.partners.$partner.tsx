@@ -1,18 +1,13 @@
 import { useCallback, useState } from "react";
-import { ActionFunctionArgs, json, LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useSubmit } from "@remix-run/react";
+import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
 import {
   Page,
   InlineGrid,
   InlineStack,
-  Form,
-  Button,
   BlockStack,
   Text,
-  Divider,
-  Link,
   Tabs,
-  Card,
 } from "@shopify/polaris";
 import {
   fetchInventoryForItemServer,
@@ -23,13 +18,11 @@ import {
 } from "../lib/fetch.server";
 import { OrderFromKnit, Product } from "app/types/products";
 import { decrypt } from "app/lib/encrypt";
-import AdminProductCard from "app/components/Cards/adminProductCard";
-import { PhoneIcon, PlusCircleIcon, ProfileIcon } from "@shopify/polaris-icons";
-import { requireAdmin } from "app/permissions.server";
+import { PhoneIcon } from "@shopify/polaris-icons";
 import ProductsTabs from "app/components/Tabs/productsTabs";
 import OrdersTabs from "app/components/Tabs/ordersTabs";
-import { authenticate } from "app/shopify.server";
 import AdminInfoCard from "app/components/Cards/adminInformationCard";
+import prisma from "../db.server";
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const apiVersion = process.env.API_VERSION || "";

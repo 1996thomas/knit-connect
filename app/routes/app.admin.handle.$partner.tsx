@@ -1,8 +1,4 @@
-import {
-  ActionFunctionArgs,
-  LoaderFunctionArgs,
-  redirect,
-} from "@remix-run/node";
+import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import {
   Form,
   useActionData,
@@ -20,9 +16,9 @@ import {
   TextField,
 } from "@shopify/polaris";
 import { countryNameOptions } from "app/lib/countryNameOptions";
-import { requireAdmin } from "app/permissions.server";
 import { useCallback, useEffect, useState } from "react";
 import { fetchPartner } from "../lib/fetch.server";
+import prisma from "../db.server";
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const { partner } = params;
