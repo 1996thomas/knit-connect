@@ -1,4 +1,7 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+import type { ActionFunction, LoaderFunction } from "@remix-run/node";
+import { json } from "@remix-run/node";
+import type { SerializeFrom } from "@remix-run/node";
+import { useLoaderData, Form } from "@remix-run/react";
 import {
   Page,
   Text,
@@ -10,158 +13,156 @@ import {
   Badge,
   InlineStack,
 } from "@shopify/polaris";
-import { authenticate } from "../shopify.server";
-import { requirePartner } from "app/permissions.server";
 import {
   InfoIcon,
   OrderIcon,
-  ProductAddIcon,
   ReceiptIcon,
 } from "@shopify/polaris-icons";
+
+import { authenticate } from "../shopify.server";
+import { requirePartner } from "app/permissions.server";
 import {
   fetchOrder,
   fetchProductFromDB,
   fetchShopProduct,
 } from "../lib/fetch.server";
 import { OrderFromKnit, Product } from "app/types/products";
-import { useLoaderData } from "@remix-run/react";
 import PartnerProductCard from "app/components/Cards/partnerProductCard";
-import { useEffect, useState } from "react";
-import { createShopProductAction } from "app/lib/createShopProductAction";
 import PartnerOrderCard from "app/components/Cards/partnerOrderCard";
-import { Order } from "app/types/order";
-import { decrypt } from "app/lib/encrypt";
 import PartnerInfoCard from "app/components/Cards/partnerInformationCard";
+import { createShopProductAction } from "app/lib/createShopProductAction";
+import { decrypt } from "app/lib/encrypt";
 import prisma from "../db.server";
+import { useEffect, useState } from "react";
+import { Order } from "app/types/order";
 
-const url = process.env.WEBSITE_URL || "";
-const token = process.env.WEBSITE_TOKEN || "";
+const WEBSITE_URL = process.env.WEBSITE_URL || "";
+const WEBSITE_TOKEN = process.env.WEBSITE_TOKEN || "";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader: LoaderFunction = async ({ request }) => {
   await requirePartner(request);
   const { session } = await authenticate.admin(request);
   const { shop } = session;
   const apiVersion = process.env.API_VERSION || "";
   const knitContact = process.env.KNIT_CONTACT_MAIL || "t.reynaud@99knit.com";
 
+  // Récupère le partenaire en base
   const partner = await prisma.partner.findUnique({ where: { shop } });
   if (!partner) {
-    return {
-      matchedProducts: [],
+    return json({
+      matchedProducts: [] as Array<Product & { status?: string }>,
       knitContact,
       store: shop,
-      filteredOrder: [],
+      filteredOrder: [] as Array<unknown>,
       pending: true,
       partnerFromKnit: null,
-    };
+    });
   }
 
-  const knitResponse = await fetch(`${url}/api/knit-connect/get-partner`, {
+  // Appel à Knit pour récupérer les infos du partenaire
+  const knitRes = await fetch(`${WEBSITE_URL}/api/knit-connect/get-partner`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${WEBSITE_TOKEN}`,
     },
     body: JSON.stringify({ shop }),
   });
+  if (!knitRes.ok) throw new Response("Erreur Knit", { status: 502 });
+  const partnerFromKnit = await knitRes.json();
 
-  const partnerFromKnit = await knitResponse.json();
-
-  const decryptedAccessToken = decrypt(partner.accessToken || "");
-  const { edges } = await fetchShopProduct(
-    partner.shop,
-    decryptedAccessToken || "",
-    apiVersion,
-  );
-
+  // Produits Shopify vs DB
+  const token = decrypt(partner.accessToken || "");
+  const { edges } = await fetchShopProduct(shop, token, apiVersion);
   const productsFromDB = await fetchProductFromDB(partner.id);
-  const dbProductIds = new Set(productsFromDB.map((p) => p.id));
-  console.log("edges:", edges);
-  console.log("productsFromDB:", productsFromDB);
-  const matchedProducts = edges
-    .filter((product: Product) =>
-      productsFromDB.some((p) => p.id === product.node.id),
-    )
-    .map((product: Product) => {
-      const dbProduct = productsFromDB.find((p) => p.id === product.node.id);
-      if (!dbProduct) {
-        console.warn("Aucun enregistrement DB pour", product.node.id);
-      }
-      return {
-        ...product,
-        status: dbProduct?.status ?? "UNKNOWN",
-      };
+
+  // Combine en filtrant et protégeant status
+  const matchedProducts: Array<Product & { status?: string }> = [];
+  for (const product of edges) {
+    const dbProd = productsFromDB.find((p) => p.id === product.node.id);
+    if (!dbProd) continue;
+    matchedProducts.push({
+      ...product,
+      status: dbProd.status ?? "UNKNOWN",
     });
+  }
   matchedProducts.reverse();
 
-  const response = await fetch(`${url}/api/knit-connect/orders`, {
+  // Commandes Knit
+  const ordersRes = await fetch(`${WEBSITE_URL}/api/knit-connect/orders`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${WEBSITE_TOKEN}`,
     },
     body: JSON.stringify({ shop }),
   });
+  if (!ordersRes.ok) throw new Response("Erreur Orders", { status: 502 });
+  const ordersJson = await ordersRes.json();
+  const data: OrderFromKnit[] = Array.isArray(ordersJson)
+    ? ordersJson
+    : ordersJson.orders || [];
 
-  const responseJson = await response.json();
-  const data: OrderFromKnit[] = Array.isArray(responseJson)
-    ? responseJson
-    : responseJson.orders || [];
-
-  const orders: Order[] = (
+  const detailedOrders = (
     await Promise.all(
-      data.map(async (order: OrderFromKnit) => {
-        const orderDetails = await fetchOrder(
-          order.partner_order_id,
+      data.map(async (ord) => {
+        const details = await fetchOrder(
+          ord.partner_order_id,
           shop,
           apiVersion,
-          decryptedAccessToken || "",
+          token,
         );
-        return { ...orderDetails, delivery_label: order.delivery_label };
+        return { ...details, delivery_label: ord.delivery_label };
       }),
     )
-  ).filter((order) => order && order.order && order.order.id);
+  ).filter((o) => o?.order?.id);
 
-  const filteredOrder = orders.filter((order) => order.delivery_label === null);
-  return {
+  const filteredOrder = detailedOrders.filter((o) => o.delivery_label === null);
+
+  return json({
     matchedProducts,
     knitContact,
-    store: partner.shop,
+    store: shop,
     filteredOrder,
     pending: false,
     partnerFromKnit,
-  };
+  });
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action: ActionFunction = async ({ request }) => {
   try {
     const product = await createShopProductAction(request);
-    return { product };
-  } catch (error: any) {
-    console.error("Erreur lors de la création du produit :", error);
-    return { error: error.message, status: 400 };
+    return json({ product });
+  } catch (err: any) {
+    console.error("Erreur création produit :", err);
+    return json({ error: err.message }, { status: 400 });
   }
 };
 
-export default function Index() {
-  const loaderData = useLoaderData<typeof loader>();
+// Dérive le type JSON-friendly du loader
+type LoaderData = SerializeFrom<typeof loader>;
+
+export default function Dashboard() {
   const {
+    matchedProducts,
+    knitContact,
+    store,
+    filteredOrder,
     pending,
-    matchedProducts = [],
-    knitContact = "",
-    store = "",
-    filteredOrder = [],
     partnerFromKnit,
-  } = loaderData || {};
+  } = useLoaderData<LoaderData>();
+
   const [productWarning, setProductWarning] = useState(false);
 
   useEffect(() => {
+    // Pas d'annotation explicite : TS infère le bon type
     matchedProducts.forEach((product: Product) => {
       if (product.status === "PENDING" || product.node.totalInventory > 5) {
         setProductWarning(true);
       }
     });
-  }, []);
+  }, [matchedProducts]);
+
   return (
     <Page title="Dashboard" fullWidth>
       {pending ? (
@@ -175,7 +176,8 @@ export default function Index() {
         </Card>
       ) : (
         <Grid>
-          <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
+          {/* — Products — */}
+          <Grid.Cell columnSpan={{ md: 3, lg: 6 }}>
             <Card roundedAbove="sm">
               <BlockStack gap="200">
                 <InlineGrid columns="1fr auto">
@@ -183,51 +185,38 @@ export default function Index() {
                     Last products
                   </Text>
                   <InlineStack blockAlign="center" gap="100">
-                    {productWarning ? (
+                    {productWarning && (
                       <Badge tone="warning" size="small">
                         Attention required
                       </Badge>
-                    ) : null}
-                    <Button
-                      url="/app/partner/products"
-                      onClick={() => {}}
-                      accessibilityLabel="Check products"
-                      icon={ProductAddIcon}
-                    >
-                      Check products
-                    </Button>
+                    )}
                   </InlineStack>
                 </InlineGrid>
                 <Text as="p" variant="bodyMd">
                   This is the last products you added to Knit.
                 </Text>
-                <Grid.Cell>
-                  <InlineGrid columns={{ md: 1, lg: 2, xl: 2 }} gap="200">
-                    {matchedProducts.slice(0, 4).map((item: Product) => (
-                      <PartnerProductCard
-                        key={item.node.id}
-                        item={item}
-                        knitContact={knitContact}
-                        store={store}
-                      />
-                    ))}
-                  </InlineGrid>
-                </Grid.Cell>
+                <InlineGrid columns={{ lg: 2, xl: 2 }} gap="200">
+                  {matchedProducts.slice(0, 4).map((item: Product) => (
+                    <PartnerProductCard
+                      key={item.node.id}
+                      item={item}
+                      knitContact={knitContact}
+                      store={store}
+                    />
+                  ))}
+                </InlineGrid>
               </BlockStack>
             </Card>
           </Grid.Cell>
-          <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
+
+          {/* — Orders — */}
+          <Grid.Cell columnSpan={{ md: 3, lg: 6 }}>
             <Card roundedAbove="sm">
               <InlineGrid columns="1fr auto">
                 <Text as="h2" variant="headingXl">
                   Last orders
                 </Text>
-                <Button
-                  url="/app/partner/orders"
-                  onClick={() => {}}
-                  accessibilityLabel="Check Orders"
-                  icon={OrderIcon}
-                >
+                <Button url="/app/partner/orders" icon={OrderIcon}>
                   Check orders
                 </Button>
               </InlineGrid>
@@ -240,7 +229,7 @@ export default function Index() {
                     No orders to display
                   </Text>
                 ) : (
-                  filteredOrder.reverse().map((order) => (
+                  filteredOrder.slice(-4).map((order: Order) => (
                     <PartnerOrderCard
                       key={order.order.id}
                       //@ts-ignore
@@ -253,19 +242,16 @@ export default function Index() {
               </InlineGrid>
             </Card>
           </Grid.Cell>
-          <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
+
+          {/* — Payouts — */}
+          <Grid.Cell columnSpan={{ md: 3, lg: 6 }}>
             <Card roundedAbove="sm">
               <BlockStack gap="200">
                 <InlineGrid columns="1fr auto">
                   <Text as="h2" variant="headingXl">
                     Last payouts
                   </Text>
-                  <Button
-                    url="/app/partner/payout"
-                    onClick={() => {}}
-                    accessibilityLabel="Add variant"
-                    icon={ReceiptIcon}
-                  >
+                  <Button url="/app/partner/payout" icon={ReceiptIcon}>
                     Check payouts
                   </Button>
                 </InlineGrid>
@@ -275,7 +261,9 @@ export default function Index() {
               </BlockStack>
             </Card>
           </Grid.Cell>
-          <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
+
+          {/* — Partner Info — */}
+          <Grid.Cell columnSpan={{ md: 3, lg: 6 }}>
             <Card roundedAbove="sm">
               <BlockStack gap="200">
                 <InlineGrid columns="1fr auto">
@@ -283,11 +271,7 @@ export default function Index() {
                     Informations
                   </Text>
                   <Button
-                    url={`mailto:${knitContact}?subject=I want to modify my informations on Knit&body=Hello, It's ${partnerFromKnit.existingPartner.shop_name}  on Knit and I want to modify my informations :`}
-                    target="_blank"
-                    size="slim"
-                    onClick={() => {}}
-                    accessibilityLabel="Contact us"
+                    url={`mailto:${knitContact}?subject=Modify account&body=Hello, I'm ${partnerFromKnit.existingPartner.shop_name}`}
                     icon={InfoIcon}
                   >
                     Modify informations
