@@ -40,7 +40,7 @@ const token = process.env.WEBSITE_TOKEN || "";
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await requirePartner(request);
   const { session } = await authenticate.admin(request);
-  const { shop, accessToken } = session;
+  const { shop } = session;
   const apiVersion = process.env.API_VERSION || "";
   const knitContact = process.env.KNIT_CONTACT_MAIL || "t.reynaud@99knit.com";
 
@@ -76,12 +76,21 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const productsFromDB = await fetchProductFromDB(partner.id);
   const dbProductIds = new Set(productsFromDB.map((p) => p.id));
-
+  console.log("edges:", edges);
+  console.log("productsFromDB:", productsFromDB);
   const matchedProducts = edges
-    .filter((product: Product) => dbProductIds.has(product.node.id))
+    .filter((product: Product) =>
+      productsFromDB.some((p) => p.id === product.node.id),
+    )
     .map((product: Product) => {
       const dbProduct = productsFromDB.find((p) => p.id === product.node.id);
-      return { ...product, status: dbProduct?.status };
+      if (!dbProduct) {
+        console.warn("Aucun enregistrement DB pour", product.node.id);
+      }
+      return {
+        ...product,
+        status: dbProduct?.status ?? "UNKNOWN",
+      };
     });
   matchedProducts.reverse();
 
