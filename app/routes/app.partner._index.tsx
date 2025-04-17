@@ -197,6 +197,9 @@ export default function Dashboard() {
                         Attention required
                       </Badge>
                     )}
+                    <Button url="/app/partner/products" icon={InfoIcon}>
+                      Check products
+                    </Button>
                   </InlineStack>
                 </InlineGrid>
                 <Text as="p" variant="bodyMd">
