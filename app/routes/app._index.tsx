@@ -21,8 +21,22 @@ export const loader: LoaderFunction = async ({ request }) => {
   const isAdmin = shop.toLowerCase() === process.env.KNIT_SHOP?.toLowerCase();
   let isSynced = false;
 
+  if (isAdmin) {
+    const existingAdmin = await prisma.admin.findUnique({
+      where: { shop },
+    });
+    if (existingAdmin) {
+      return { isAdmin, isSynced };
+    }
+    await prisma.admin.create({
+      data: {
+        shop,
+        accessToken: encrypt(session.accessToken || ""),
+      },
+    });
+  }
+
   if (!isAdmin) {
-    // 1. Essaye de récupérer l'état du partner chez Knit
     let existing: { status?: string } | undefined;
     try {
       const res1 = await fetch(`${url}/api/knit-connect/get-partner`, {
@@ -36,7 +50,10 @@ export const loader: LoaderFunction = async ({ request }) => {
       const data1 = await res1.json();
       existing = data1?.existingPartner;
     } catch (e) {
-      console.warn("⚠️ Erreur fetch get-partner, on considère non synchronisé", e);
+      console.warn(
+        "⚠️ Erreur fetch get-partner, on considère non synchronisé",
+        e,
+      );
     }
 
     // 2. Si actif, on marque synced
@@ -61,7 +78,10 @@ export const loader: LoaderFunction = async ({ request }) => {
           isSynced = true;
         }
       } catch (e) {
-        console.warn("⚠️ Erreur partner-connect ou DB, on reste non synchronisé", e);
+        console.warn(
+          "⚠️ Erreur partner-connect ou DB, on reste non synchronisé",
+          e,
+        );
       }
     }
   }

@@ -114,7 +114,6 @@ function StatCard({ label, value }: StatCardProps) {
 export default function Index() {
   const {
     partners = [],
-    orders,
     pendingOrders,
     last30daysOrdersCount,
     allOrdersCount,
