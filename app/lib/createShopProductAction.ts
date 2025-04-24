@@ -2,6 +2,8 @@
 import { authenticate } from "app/shopify.server";
 import { createShopProduct } from "./post.server";
 import { decrypt } from "./encrypt";
+import prisma from '../db.server'
+
 
 export async function createShopProductAction(request: Request) {
   const { session } = await authenticate.admin(request);

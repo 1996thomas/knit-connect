@@ -192,7 +192,7 @@ export default function Dashboard() {
   const filteredRanges = yearRanges.filter((range) => range.start <= now);
 
   const ordersGroupedByPeriod = filteredRanges.map((range) => {
-    const ordersInPeriod = orders.filter((order) => {
+    const ordersInPeriod = orders.filter((order: Order) => {
       const date = new Date(order.createdAt);
       return date >= range.start && date <= range.end;
     });

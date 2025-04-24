@@ -1,5 +1,7 @@
 import { gql, GraphQLClient } from "graphql-request";
 import { decrypt } from "./encrypt";
+import prisma from '../db.server'
+
 const apiVersion = process.env.API_VERSION || "2025-01";
 const shop = process.env.KNIT_SHOP || "";
 
