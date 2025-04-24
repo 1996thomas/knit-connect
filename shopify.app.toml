@@ -1,10 +1,10 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "d8e0c006b061d773f74071863d6174d7"
-application_url = "https://modify-discussions-jokes-relatives.trycloudflare.com"
+client_id = "de19d90c25bb3248068415608f38e94f"
+application_url = "https://knit-connect-production.up.railway.app"
 embedded = true
-name = "international-upside-app"
-handle = "international-upside-app-5"
+name = "knit-connect"
+handle = "knit-connect-1"
 
 [build]
 include_config_on_deploy = true
@@ -23,7 +23,7 @@ api_version = "2025-01"
 
   [[webhooks.subscriptions]]
   topics = [ "inventory_levels/update" ]
-  uri = "https://023b-2001-861-6cd0-8500-ec1d-c584-83a3-f718.ngrok-free.app/api/webhook/inventory-levels-update"
+  uri = "https://knit-website-ashen.vercel.app/api/webhook/inventory-levels-update"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
@@ -31,9 +31,9 @@ scopes = "write_products,read_files,write_files,read_products,write_orders,read_
 
 [auth]
 redirect_urls = [
-  "https://modify-discussions-jokes-relatives.trycloudflare.com/auth/callback",
-  "https://modify-discussions-jokes-relatives.trycloudflare.com/auth/shopify/callback",
-  "https://modify-discussions-jokes-relatives.trycloudflare.com/api/auth/callback"
+  "https://knit-connect-production.up.railway.app/auth/callback",
+  "https://knit-connect-production.up.railway.app/auth/shopify/callback",
+  "https://knit-connect-production.up.railway.app/api/auth/callback"
 ]
 
 [pos]
