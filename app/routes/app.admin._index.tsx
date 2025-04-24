@@ -148,52 +148,67 @@ export default function Index() {
 
   return (
     <>
-      <BlockStack gap={"300"}>
-        <Text as="h1" variant="headingXl">
-          Overview
-        </Text>
-        <BlockStack gap={"400"}>
-          <Text as="h2" variant="headingLg">
-            Commands
+      {partners.length > 0 ? (
+        <BlockStack gap={"300"}>
+          <Text as="h1" variant="headingXl">
+            Overview
           </Text>
-          <InlineGrid columns={{ xs: 1, sm: 2, md: 2, lg: 4, xl: 5 }} gap="300">
-            {commandStats.map((stat) => (
-              <StatCard
-                key={stat.label}
-                label={stat.label}
-                value={stat.value}
-              />
-            ))}
-          </InlineGrid>
-          <Divider />
-          <Text as="h2" variant="headingLg">
-            Sales
-          </Text>
-          <InlineGrid columns={{ xs: 1, sm: 2, md: 2, lg: 4, xl: 5 }} gap="300">
-            {moneyStats.map((stat) => (
-              <StatCard
-                key={stat.label}
-                label={stat.label}
-                value={stat.value}
-              />
-            ))}
-          </InlineGrid>
-          <Divider />
+          <BlockStack gap={"400"}>
+            <Text as="h2" variant="headingLg">
+              Commands
+            </Text>
+            <InlineGrid
+              columns={{ xs: 1, sm: 2, md: 2, lg: 4, xl: 5 }}
+              gap="300"
+            >
+              {commandStats.map((stat) => (
+                <StatCard
+                  key={stat.label}
+                  label={stat.label}
+                  value={stat.value}
+                />
+              ))}
+            </InlineGrid>
+            <Divider />
+            <Text as="h2" variant="headingLg">
+              Sales
+            </Text>
+            <InlineGrid
+              columns={{ xs: 1, sm: 2, md: 2, lg: 4, xl: 5 }}
+              gap="300"
+            >
+              {moneyStats.map((stat) => (
+                <StatCard
+                  key={stat.label}
+                  label={stat.label}
+                  value={stat.value}
+                />
+              ))}
+            </InlineGrid>
+            <Divider />
 
-          <Text as="h2" variant="headingLg">
-            General
-          </Text>
-          <InlineGrid columns={{ xs: 1, sm: 2, md: 2, lg: 4, xl: 5 }} gap="300">
-            {generalStats.map((stat) => (
-              <StatCard
-                key={stat.label}
-                label={stat.label}
-                value={stat.value}
-              />
-            ))}
-          </InlineGrid>
+            <Text as="h2" variant="headingLg">
+              General
+            </Text>
+            <InlineGrid
+              columns={{ xs: 1, sm: 2, md: 2, lg: 4, xl: 5 }}
+              gap="300"
+            >
+              {generalStats.map((stat) => (
+                <StatCard
+                  key={stat.label}
+                  label={stat.label}
+                  value={stat.value}
+                />
+              ))}
+            </InlineGrid>
+          </BlockStack>
         </BlockStack>
-      </BlockStack>
+      ) : (
+        <Text variant="headingLg" as="h2">
+          No information available
+        </Text>
+      )}
     </>
   );
 }
