@@ -2,6 +2,7 @@ export interface Product {
   status: string;
   media: any;
   node: {
+    featuredImage: any;
     status: string;
     media: Media;
     id: string;

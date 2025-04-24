@@ -12,6 +12,7 @@ import {
   Button,
   Badge,
   InlineStack,
+  Scrollable,
 } from "@shopify/polaris";
 import { InfoIcon, OrderIcon, ReceiptIcon } from "@shopify/polaris-icons";
 
@@ -31,6 +32,8 @@ import { decrypt } from "app/lib/encrypt";
 import prisma from "../db.server";
 import { useEffect, useState } from "react";
 import { Order } from "app/types/order";
+import getYearRanges from "app/lib/yearRanges";
+import PartnerPayoutCard from "app/components/Cards/partnerPayoutCard";
 
 const WEBSITE_URL = process.env.WEBSITE_URL || "";
 const WEBSITE_TOKEN = process.env.WEBSITE_TOKEN || "";
@@ -125,6 +128,13 @@ export const loader: LoaderFunction = async ({ request }) => {
   ).filter((o) => o?.order?.id);
 
   const filteredOrder = detailedOrders.filter((o) => o.delivery_label === null);
+  const payouts = partnerFromKnit.existingPartner.Payout;
+  const orders = partnerFromKnit.existingPartner.Partner_Order;
+  const totalAmount = detailedOrders.reduce(
+    (acc: number, order: Order) =>
+      acc + parseFloat(order.order.totalPriceSet.presentmentMoney.amount),
+    0,
+  );
 
   return json({
     matchedProducts,
@@ -133,6 +143,9 @@ export const loader: LoaderFunction = async ({ request }) => {
     filteredOrder,
     pending: false,
     partnerFromKnit,
+    payouts,
+    orders,
+    totalAmount,
   });
 };
 
@@ -157,6 +170,9 @@ export default function Dashboard() {
     filteredOrder,
     pending,
     partnerFromKnit,
+    payouts,
+    orders,
+    totalAmount,
   } = useLoaderData<LoaderData>();
 
   const [productWarning, setProductWarning] = useState(false);
@@ -164,12 +180,28 @@ export default function Dashboard() {
   useEffect(() => {
     // Pas d'annotation explicite : TS infère le bon type
     matchedProducts.forEach((product: Product) => {
-      if (product.status === "PENDING" || product.node.totalInventory > 5) {
+      console.log(product.node.totalInventory)
+      if (product.status === "PENDING" || product.node.totalInventory < 9) {
         setProductWarning(true);
       }
     });
   }, [matchedProducts]);
+  const now = new Date();
+  const yearRanges = getYearRanges();
 
+  const filteredRanges = yearRanges.filter((range) => range.start <= now);
+
+  const ordersGroupedByPeriod = filteredRanges.map((range) => {
+    const ordersInPeriod = orders.filter((order) => {
+      const date = new Date(order.createdAt);
+      return date >= range.start && date <= range.end;
+    });
+    const payoutInfo = payouts.find(
+      (p: { period: string }) => p.period === range.key,
+    );
+    return { range, orders: ordersInPeriod, payout: payoutInfo };
+  });
+  const reversedGrouped = ordersGroupedByPeriod.reverse();
   return (
     <Page title="Dashboard" fullWidth>
       {pending ? (
@@ -184,7 +216,7 @@ export default function Dashboard() {
       ) : (
         <Grid>
           {/* — Products — */}
-          <Grid.Cell columnSpan={{ md: 3, lg: 6 }}>
+          <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6 }}>
             <Card roundedAbove="sm">
               <BlockStack gap="200">
                 <InlineGrid columns="1fr auto">
@@ -205,83 +237,176 @@ export default function Dashboard() {
                 <Text as="p" variant="bodyMd">
                   This is the last products you added to Knit.
                 </Text>
-                <InlineGrid columns={{ lg: 2, xl: 2 }} gap="200">
-                  {matchedProducts.slice(0, 4).map((item: Product) => (
-                    <PartnerProductCard
-                      key={item.node.id}
-                      item={item}
-                      knitContact={knitContact}
-                      store={store}
-                    />
-                  ))}
-                </InlineGrid>
+                <Scrollable
+                  style={{ height: "320px" }}
+                  scrollbarGutter="stable"
+                >
+                  <InlineGrid columns={{ lg: 2, xl: 2 }} gap="200">
+                    {matchedProducts.slice(0, 8).map((item: Product) => (
+                      <PartnerProductCard
+                        key={item.node.id}
+                        item={item}
+                        knitContact={knitContact}
+                        store={store}
+                      />
+                    ))}
+                  </InlineGrid>
+                </Scrollable>
               </BlockStack>
             </Card>
           </Grid.Cell>
 
           {/* — Orders — */}
-          <Grid.Cell columnSpan={{ md: 3, lg: 6 }}>
-            <Card roundedAbove="sm">
-              <InlineGrid columns="1fr auto">
-                <Text as="h2" variant="headingXl">
-                  Last orders
-                </Text>
-                <Button url="/app/partner/orders" icon={OrderIcon}>
-                  Check orders
-                </Button>
-              </InlineGrid>
-              <Text as="p" variant="bodyMd">
-                This is the last orders you got from Knit.
-              </Text>
-              <InlineGrid columns="1fr" gap="200">
-                {filteredOrder.length === 0 ? (
-                  <Text variant="bodyMd" as="p">
-                    No orders to display
-                  </Text>
-                ) : (
-                  filteredOrder.slice(-4).map((order: Order) => (
-                    <PartnerOrderCard
-                      key={order.order.id}
-                      //@ts-ignore
-                      order={order}
-                      knitContact={knitContact}
-                      store={store}
-                    />
-                  ))
-                )}
-              </InlineGrid>
-            </Card>
-          </Grid.Cell>
-
-          {/* — Payouts — */}
-          <Grid.Cell columnSpan={{ md: 3, lg: 6 }}>
+          <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6 }}>
             <Card roundedAbove="sm">
               <BlockStack gap="200">
                 <InlineGrid columns="1fr auto">
                   <Text as="h2" variant="headingXl">
-                    Last payouts
+                    Last orders
                   </Text>
-                  <Button url="/app/partner/payout" icon={ReceiptIcon}>
-                    Check payouts
+                  <Button url="/app/partner/orders" icon={OrderIcon}>
+                    Check orders
                   </Button>
                 </InlineGrid>
                 <Text as="p" variant="bodyMd">
-                  This is the last payouts you got from Knit.
+                  This is the last orders you got from Knit.
                 </Text>
+                <InlineGrid columns="1fr" gap="200">
+                  {filteredOrder.length === 0 ? (
+                    <Text variant="bodyMd" as="p">
+                      No orders to display
+                    </Text>
+                  ) : (
+                    <Scrollable
+                      style={{ height: "320px" }}
+                      scrollbarGutter="stable"
+                    >
+                      {filteredOrder.slice(-4).map((order: Order) => (
+                        <PartnerOrderCard
+                          key={order.order.id}
+                          //@ts-ignore
+                          order={order}
+                          knitContact={knitContact}
+                          store={store}
+                          isFromHome={true}
+                        />
+                      ))}
+                    </Scrollable>
+                  )}
+                </InlineGrid>
               </BlockStack>
             </Card>
           </Grid.Cell>
 
-          {/* — Partner Info — */}
-          <Grid.Cell columnSpan={{ md: 3, lg: 6 }}>
+          {/* — Payouts — */}
+          <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6 }}>
             <Card roundedAbove="sm">
               <BlockStack gap="200">
                 <InlineGrid columns="1fr auto">
                   <Text as="h2" variant="headingXl">
-                    Informations
+                    Sales informations
+                  </Text>
+                </InlineGrid>
+                <Text as="p" variant="bodyMd">
+                  This is some sales informations from the begining of yout
+                  partnership with Knit.
+                </Text>
+                <InlineGrid columns={{ xs: 1, sm: 2, md: 2, lg: 3 }} gap="200">
+                  <Card>
+                    <div
+                      style={{
+                        aspectRatio: "1/1",
+                        height: "100%",
+                        width: "100%",
+                      }}
+                    >
+                      <Text variant="headingMd" as="h2">
+                        Total orders
+                      </Text>
+                      <span
+                        style={{
+                          fontSize: "80px",
+                          color: "lightgray",
+                          position: "absolute",
+                          top: "50%",
+                          left: "50%",
+                          transform: "translate(-50%, -50%)",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {orders.length}
+                      </span>
+                    </div>
+                  </Card>
+                  <Card>
+                    <div
+                      style={{
+                        aspectRatio: "1/1",
+                        height: "100%",
+                        width: "100%",
+                      }}
+                    >
+                      <Text variant="headingMd" as="h2">
+                        Total products
+                      </Text>
+                      <span
+                        style={{
+                          fontSize: "80px",
+                          color: "lightgray",
+                          position: "absolute",
+                          top: "50%",
+                          left: "50%",
+                          transform: "translate(-50%, -50%)",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {matchedProducts.length}
+                      </span>
+                    </div>
+                  </Card>
+                  <Card>
+                    <div
+                      style={{
+                        aspectRatio: "1/1",
+                        height: "100%",
+                        width: "100%",
+                      }}
+                    >
+                      <span style={{ zIndex: 2 }}>
+                        <Text variant="headingMd" as="h2">
+                          Total sales(€)
+                        </Text>
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "80px",
+                          zIndex: 0,
+                          color: "lightgray",
+                          position: "absolute",
+                          top: "50%",
+                          left: "50%",
+                          transform: "translate(-50%, -50%)",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {totalAmount.toFixed(0)}
+                      </span>
+                    </div>
+                  </Card>
+                </InlineGrid>
+              </BlockStack>
+            </Card>
+          </Grid.Cell>
+          {/* — Partner Info — */}
+          <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6 }}>
+            <Card roundedAbove="sm">
+              <BlockStack gap="200">
+                <InlineGrid columns="1fr auto">
+                  <Text as="h2" variant="headingXl">
+                    Partnership informations
                   </Text>
                   <Button
-                    url={`mailto:${knitContact}?subject=Modify account&body=Hello, I'm ${partnerFromKnit.existingPartner.shop_name}`}
+                    url={`mailto:${knitContact}?subject=Modify account&body=Hello, it's ${partnerFromKnit.existingPartner.shop_name}, i want to modify some informations about my account`}
                     icon={InfoIcon}
                   >
                     Modify informations

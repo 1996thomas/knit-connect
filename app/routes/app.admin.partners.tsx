@@ -59,7 +59,7 @@ export default function page() {
                   shop_name: string;
                   status: string;
                 }) => (
-                  <InlineStack align="start">
+                  <InlineStack align="start" key={partner.shop_url}>
                     {partner.status === "ACTIVE" ? (
                       <Link to={`/app/admin/partners/${partner.shop_url}`}>
                         <Badge tone="magic">{partner.shop_name}</Badge>

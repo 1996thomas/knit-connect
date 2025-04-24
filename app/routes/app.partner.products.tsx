@@ -1,6 +1,6 @@
 import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-import { InlineGrid, Page } from "@shopify/polaris";
+import { BlockStack, InlineGrid, Page, Text } from "@shopify/polaris";
 import { requirePartner } from "app/permissions.server";
 import { authenticate } from "app/shopify.server";
 import { Product } from "app/types/products";
@@ -58,15 +58,48 @@ export default function page() {
       fullWidth
       subtitle="Here is the list of products requested by the Knit store, click on Add to Knit when everything is ready for you. If you made modification on a product, just click on Update button. Once listed, if you got any problem with a product, click on  Report problem."
     >
-      <InlineGrid gap={"200"} columns={{ xs: 1, sm: 1, md: 2, lg: 4 }}>
-        {matchedProducts.map((item: Product) => (
-          <PartnerProductCard
-            item={item}
-            knitContact={knitContact}
-            store={store}
-          />
-        ))}
-      </InlineGrid>
+      <BlockStack gap={"200"}>
+        {matchedProducts.filter((item: Product) => item.status === "CONFIRMED")
+          .length > 0 && (
+          <>
+            <Text variant="headingLg" as="h2">
+              Products listed on Knit
+            </Text>
+            <InlineGrid gap={"200"} columns={{ xs: 1, sm: 1, md: 2, lg: 4 }}>
+              {matchedProducts
+                .filter((item: Product) => item.status === "CONFIRMED")
+                .map((item: Product) => (
+                  <PartnerProductCard
+                    key={item.node.id}
+                    item={item}
+                    knitContact={knitContact}
+                    store={store}
+                  />
+                ))}
+            </InlineGrid>
+          </>
+        )}
+        {matchedProducts.filter((item: Product) => item.status === "PENDING")
+          .length > 0 && (
+          <>
+            <Text variant="headingLg" as="h2">
+              Products waiting for your action
+            </Text>
+            <InlineGrid gap={"200"} columns={{ xs: 1, sm: 1, md: 2, lg: 4 }}>
+              {matchedProducts
+                .filter((item: Product) => item.status === "PENDING")
+                .map((item: Product) => (
+                  <PartnerProductCard
+                    key={item.node.id}
+                    item={item}
+                    knitContact={knitContact}
+                    store={store}
+                  />
+                ))}
+            </InlineGrid>
+          </>
+        )}
+      </BlockStack>
     </Page>
   );
 }

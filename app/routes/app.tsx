@@ -1,5 +1,12 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "@remix-run/node";
-import { Link, Outlet, useLoaderData, useNavigate, useRevalidator, useRouteError } from "@remix-run/react";
+import {
+  Link,
+  Outlet,
+  useLoaderData,
+  useNavigate,
+  useRevalidator,
+  useRouteError,
+} from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
 import { NavMenu } from "@shopify/app-bridge-react";
@@ -18,7 +25,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function App() {
   const { apiKey } = useLoaderData<typeof loader>();
-  const {revalidate} = useRevalidator()
+  const { revalidate } = useRevalidator();
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey}>
       <Page
@@ -38,15 +45,20 @@ export default function App() {
             url: "/app/privacy-policy",
           },
           {
+            content: "FAQ",
+            url: "/app/faq",
+          },
+          {
             content: "Refresh app",
             onAction: () => {
-              revalidate()
+              revalidate();
             },
-            icon: RefreshIcon
+            icon: RefreshIcon,
           },
         ]}
       >
         <Outlet />
+        <div style={{ marginBlock: "50px" }} />
       </Page>
     </AppProvider>
   );

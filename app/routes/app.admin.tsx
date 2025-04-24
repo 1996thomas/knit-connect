@@ -24,6 +24,7 @@ export default function Index() {
   return (
     <>
       <NavMenu>
+        <Link url="/app/admin">Overview</Link>
         <Link url="/app/admin/partners">Partners</Link>
         <Link url="/app/admin/handle/new">Add Partners</Link>
       </NavMenu>

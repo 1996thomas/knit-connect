@@ -26,7 +26,7 @@ export async function createShopProduct(
   action: string,
 ) {
   const url = `https://${adminShop}/admin/api/${apiVersion}/graphql.json`;
-
+  console.log(node.media.edges, "node.media.edges[0].node.image.url");
   const mutation = `mutation createProductAsynchronous($productSet: ProductSetInput!, $synchronous: Boolean!) {
     productSet(synchronous: $synchronous, input: $productSet) {
       product {
@@ -75,11 +75,13 @@ export async function createShopProduct(
         position: option.position,
         values: option.values.map((value) => ({ name: value })),
       })),
-      files: node.media.edges.map((edge) => ({
-        alt: edge.node.alt,
-        contentType: edge.mediaContentType,
-        originalSource: edge.node.image.url || "",
-      })),
+      files: node.media.edges
+        .filter((edge) => edge.mediaContentType === "IMAGE")
+        .map((edge) => ({
+          alt: edge.node.alt,
+          contentType: edge.mediaContentType,
+          originalSource: edge.node.image.url || "",
+        })),
       variants: node.variants.edges.map((edge) => ({
         optionValues: edge.node.selectedOptions.map((selected) => ({
           optionName: selected.name,

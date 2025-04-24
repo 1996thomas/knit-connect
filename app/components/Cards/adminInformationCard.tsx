@@ -5,12 +5,17 @@ import {
   Card,
   Icon,
   InlineStack,
-  List,
   Text,
 } from "@shopify/polaris";
-import { EmailIcon, PhoneIcon, ProfileIcon } from "@shopify/polaris-icons";
+import {
+  CashDollarIcon,
+  EmailIcon,
+  PhoneIcon,
+  ProfileIcon,
+} from "@shopify/polaris-icons";
 
 interface AdminInfo {
+  commissionRate: any;
   shop_name?: string;
   shop_url?: string;
   createdAt?: Date;
@@ -24,7 +29,6 @@ interface AdminInfo {
 }
 
 export default function AdminInfoCard({ info }: { info: AdminInfo }) {
-  console.log(info, "!!!!!!!!!!!!!!");
   const date = new Date(info?.createdAt ?? Date.now());
   const formattedDate = date.toLocaleDateString("fr-FR", {
     year: "numeric",
@@ -34,20 +38,25 @@ export default function AdminInfoCard({ info }: { info: AdminInfo }) {
   return (
     <Card>
       <BlockStack gap="200">
-        <InlineStack align="space-between" gap="200">
-          <Text as="p" variant="bodyLg">
-            {info?.shop_name}
-          </Text>
-          <Button icon={ProfileIcon} url={`/app/admin/handle/${info.shop_url}`}>
-            Update informations
-          </Button>
-          <InlineStack gap="100">
+        <BlockStack gap={"400"}>
+          <InlineStack align="space-between" gap="200">
+            <Text as="p" variant="bodyLg">
+              {info?.shop_name}
+            </Text>
+            <Button
+              icon={ProfileIcon}
+              url={`/app/admin/handle/${info.shop_url}`}
+            >
+              Update informations
+            </Button>
+          </InlineStack>
+          <InlineStack gap="100" align="space-between">
             <Badge tone="magic" size="small">
               {info?.shop_url}
             </Badge>
             <Badge tone="success">{`Partner since ${formattedDate}`}</Badge>
           </InlineStack>
-        </InlineStack>
+        </BlockStack>
         <InlineStack align="space-between">
           <InlineStack gap="100">
             <Icon source={ProfileIcon} />
@@ -68,7 +77,7 @@ export default function AdminInfoCard({ info }: { info: AdminInfo }) {
             </Text>
           </InlineStack>
         </InlineStack>
-        <InlineStack gap="100">
+        <InlineStack gap="100" align="space-between">
           <InlineStack gap={"100"}>
             <Badge tone="info" size="small">
               {info?.country}
@@ -83,6 +92,9 @@ export default function AdminInfoCard({ info }: { info: AdminInfo }) {
               {info?.zipCode}
             </Text>
           </InlineStack>
+          <Badge icon={CashDollarIcon} tone="info" size="small">
+            {`${info?.commissionRate}%`}
+          </Badge>
         </InlineStack>
       </BlockStack>
     </Card>

@@ -14,7 +14,10 @@ export default function ProductsTabs({
   newProducts: Product[];
   partner: {
     partnerData: any;
-    partnerFromKnit?: { shop_name?: string };
+    partnerFromKnit?: {
+      shop_name?: string;
+      existingPartner?: { shop_name?: string };
+    };
   };
   inventoryLevels: Record<string, any>;
 }) {
@@ -34,6 +37,11 @@ export default function ProductsTabs({
         <Text variant="headingLg" as="h2">
           Listed on Knit
         </Text>
+        {existingProducts.length === 0 && (
+          <Text variant="bodyMd" as="p">
+            No products listed on Knit. Start by adding some just below.
+          </Text>
+        )}
         <InlineGrid gap={"200"} columns={{ xs: 1, sm: 1, md: 2, lg: 3, xl: 5 }}>
           {existingProducts.map((item: Product & { status: string }) => (
             <AdminProductCard
@@ -53,7 +61,9 @@ export default function ProductsTabs({
       <BlockStack gap={"200"}>
         {newProducts.length > 0 && (
           <Text variant="headingLg" as="h2">
-            Available on {partner.partnerFromKnit?.shop_name || "Shop"}
+            Available on{" "}
+            {partner.partnerFromKnit?.existingPartner?.shop_name || "Partner"}{" "}
+            Shopify store
           </Text>
         )}
         <InlineGrid gap={"200"} columns={{ xs: 1, sm: 1, md: 2, lg: 3, xl: 5 }}>

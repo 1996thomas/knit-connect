@@ -56,6 +56,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const email = formData.get("email");
   const phone = formData.get("phone");
   const zipcode = formData.get("zipcode");
+  const commissionRate = formData.get("commissionRate");
 
   const updatePartner = {
     partnerName: partnerName,
@@ -67,6 +68,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     email: email,
     phone: phone,
     zipcode: zipcode,
+    commissionRate: parseFloat((commissionRate || "").toString()),
   };
 
   // Exemple de vérification dans la base
@@ -116,6 +118,9 @@ export default function PageComponent() {
   const [phone, setPhone] = useState(partnerFromKnit?.phone || "");
   const [zipcode, setZipcode] = useState(partnerFromKnit?.zipCode || "");
   const [country, setCountry] = useState(partnerFromKnit?.country || "");
+  const [commissionRate, setCommissionRate] = useState(
+    partnerFromKnit?.commissionRate || "",
+  );
 
   const handleSelectChange = useCallback(
     (value: string) => setCountry(value),
@@ -127,7 +132,7 @@ export default function PageComponent() {
     if (actionData && actionData.success && actionData.partnerName) {
       const timer = setTimeout(() => {
         navigate(`/app/admin/partners`);
-      }, 5000);
+      }, 2000);
       return () => clearTimeout(timer);
     }
   }, [actionData, navigate]);
@@ -160,6 +165,21 @@ export default function PageComponent() {
                 autoComplete="off"
                 requiredIndicator
                 placeholder={partnerFromKnit.shop_url || "Shopify store"}
+              />
+              <TextField
+                label="Commission Rate (%)"
+                name="commissionRate"
+                type="number"
+                min={0}
+                max={100}
+                step={0.5}
+                value={commissionRate}
+                onChange={setCommissionRate}
+                autoComplete="off"
+                requiredIndicator
+                placeholder={
+                  partnerFromKnit.commissionRate || "Commission Rate"
+                }
               />
             </FormLayout.Group>
             <FormLayout.Group>

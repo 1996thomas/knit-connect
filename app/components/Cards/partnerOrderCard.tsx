@@ -20,10 +20,12 @@ export default function PartnerOrderCard({
   order,
   knitContact,
   store,
+  isFromHome,
 }: {
   order: Order;
   knitContact?: string;
   store: string;
+  isFromHome?: boolean;
 }) {
   const fetcher = useFetcher<{
     delivery_label?: {
@@ -110,23 +112,25 @@ export default function PartnerOrderCard({
             </BlockStack>
           ))}
         </InlineStack>
-        {!localDeliveryLabel && (
-          <InlineStack blockAlign="center" gap="200">
-            <Checkbox
-              label="Ready to ship ?"
-              checked={checked}
-              onChange={handleChange}
-            />
-            <Button
-              onClick={handleRequestLabel}
-              size="slim"
-              disabled={!checked}
-              icon={DeliveryIcon}
-            >
-              Request delivery label
-            </Button>
-          </InlineStack>
-        )}
+        {isFromHome
+          ? null
+          : !localDeliveryLabel && (
+              <InlineStack blockAlign="center" gap="200">
+                <Checkbox
+                  label="Ready to ship ?"
+                  checked={checked}
+                  onChange={handleChange}
+                />
+                <Button
+                  onClick={handleRequestLabel}
+                  size="slim"
+                  disabled={!checked}
+                  icon={DeliveryIcon}
+                >
+                  Request delivery label
+                </Button>
+              </InlineStack>
+            )}
         {localDeliveryLabel && (
           <BlockStack>
             <Button

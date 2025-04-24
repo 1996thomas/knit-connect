@@ -40,7 +40,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     body: JSON.stringify({ shop }),
   });
 
-  
   const data: OrderFromKnit[] = await response.json();
   const orders = (
     await Promise.all(
@@ -93,16 +92,48 @@ export default function OrdersPage() {
   const { orders, knitContact, store } = useLoaderData<typeof loader>();
   return (
     <Page title="Orders" fullWidth>
-      <InlineGrid gap={"200"} columns={3}>
-        {orders.slice().map((order) => (
-          <PartnerOrderCard
-            key={order.order.id}
-            order={order}
-            knitContact={knitContact}
-            store={store}
-          />
-        ))}
-      </InlineGrid>
+      <BlockStack gap={"400"}>
+        {orders.filter((order) => !order.delivery_label).length > 0 && (
+          <BlockStack gap="200">
+            <Text variant="headingXl" as="h1">
+              Orders not completed
+            </Text>
+            <InlineGrid gap={"200"} columns={3}>
+              {orders
+                .filter((order) => !order.delivery_label)
+                .map((order) => (
+                  <PartnerOrderCard
+                    key={order.order.id}
+                    order={order}
+                    knitContact={knitContact}
+                    store={store}
+                  />
+                ))
+                .reverse()}
+            </InlineGrid>
+          </BlockStack>
+        )}
+        {orders.filter((order) => order.delivery_label).length > 0 && (
+          <BlockStack gap="200">
+            <Text variant="headingXl" as="h1">
+              Orders completed
+            </Text>
+            <InlineGrid gap={"200"} columns={3}>
+              {orders
+                .filter((order) => order.delivery_label)
+                .map((order) => (
+                  <PartnerOrderCard
+                    key={order.order.id}
+                    order={order}
+                    knitContact={knitContact}
+                    store={store}
+                  />
+                ))
+                .reverse()}
+            </InlineGrid>
+          </BlockStack>
+        )}
+      </BlockStack>
     </Page>
   );
 }

@@ -1,29 +1,200 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { Card, List, Page, Text } from "@shopify/polaris";
+import {
+  BlockStack,
+  Card,
+  Divider,
+  InlineGrid,
+  List,
+  Page,
+  Text,
+} from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import { fetchPartners, fetchShopProduct } from "../lib/fetch.server";
 import { useLoaderData } from "@remix-run/react";
 import { registerCarrierService } from "app/lib/carrierService";
+import { decrypt } from "app/lib/encrypt";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
-  const partners = await fetchPartners();
-  return { partners };
+  const { session } = await authenticate.admin(request);
+  const partners = await fetch(
+    ` ${process.env.WEBSITE_URL}/api/knit-connect/get-partners`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.WEBSITE_TOKEN}`,
+      },
+    },
+  ).then((res) => res.json());
+
+  console.log(partners);
+  const commissionRateAverage =
+    partners.reduce(
+      (acc: number, partner: any) => acc + parseFloat(partner.commissionRate),
+      0,
+    ) / partners.length;
+  const products = await fetchShopProduct(
+    session.shop,
+    session.accessToken || "",
+    process.env.SHOPIFY_API_VERSION || "",
+  );
+
+  const orders = await fetch(
+    `${process.env.WEBSITE_URL}/api/knit-connect/orders-admin`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.WEBSITE_TOKEN}`,
+      },
+    },
+  ).then((res) => res.json());
+
+  const pendingOrders = orders.filter((order: any) =>
+    order.Partner_Order.find(
+      (partner_order: any) => partner_order.delivery_label === null,
+    ),
+  );
+
+  const last30daysorders = orders.filter((order: any) => {
+    const orderDate = new Date(order.createdAt);
+    const today = new Date();
+    const last30days = new Date(today.setDate(today.getDate() - 30));
+    return orderDate >= last30days;
+  });
+  const last30daysOrdersCount = last30daysorders.length;
+  const allOrdersCount = orders.length;
+  const salesRevenue = orders.reduce((acc: number, order: any) => {
+    const orderPrice = parseFloat(order.totalPrice);
+    return acc + orderPrice;
+  }, 0);
+
+  return {
+    partners,
+    orders,
+    pendingOrders,
+    last30daysOrdersCount,
+    allOrdersCount,
+    salesRevenue,
+    products,
+    commissionRateAverage,
+  };
 };
 
-export default function Index() {
-  const { partners = [] } = useLoaderData<typeof loader>();
-  return (
-    <Page fullWidth title="Knit-connect admin">
-      <Text as={"h1"} variant="headingXl">
-        Overview
-      </Text>
+type StatCardProps = {
+  label: string;
+  value: string | number;
+};
 
-      <Card>Nombre commande en cours</Card>
-      <Card>Nombre commande 30 derniers jours</Card>
-      <Card>Nombre commande ever</Card>
-      <Card>CA</Card>
-      
-    </Page>
+function StatCard({ label, value }: StatCardProps) {
+  return (
+    <Card>
+      <div style={{ display: "flex", aspectRatio: "1/1", width: "100%" }}>
+        <Text as="h2" variant="headingLg">
+          {label}
+          <span
+            style={{
+              transform: "translate(-50%, -50%)",
+              color: "lightgray",
+              fontSize: parseFloat(value.toString()) > 99 ? "130px" : "150px",
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              pointerEvents: "none",
+            }}
+          >
+            {value}
+          </span>
+        </Text>
+      </div>
+    </Card>
+  );
+}
+
+export default function Index() {
+  const {
+    partners = [],
+    orders,
+    pendingOrders,
+    last30daysOrdersCount,
+    allOrdersCount,
+    salesRevenue,
+    products,
+    commissionRateAverage,
+  } = useLoaderData<typeof loader>();
+
+  const commandStats = [
+    { label: "Commands in progress", value: pendingOrders.length },
+    { label: "Last 30 days", value: last30daysOrdersCount },
+    { label: "All time", value: allOrdersCount },
+  ];
+
+  const moneyStats = [
+    { label: "Total revenue sale (€)", value: `${salesRevenue.toFixed(0)}` },
+    // { label: "Number of products sold ", value: `${}` },
+    {
+      label: "Total commission (€)",
+      value: `${(salesRevenue * (commissionRateAverage / 100)).toFixed(0)}`,
+    },
+    {
+      label: "Average commission (%)",
+      value: `${commissionRateAverage.toFixed(0)}`,
+    },
+  ];
+
+  const generalStats = [
+    { label: "Number of Partners", value: partners.length },
+    { label: "Number of Products", value: products.edges.length },
+  ];
+
+  return (
+    <>
+      <BlockStack gap={"300"}>
+        <Text as="h1" variant="headingXl">
+          Overview
+        </Text>
+        <BlockStack gap={"400"}>
+          <Text as="h2" variant="headingLg">
+            Commands
+          </Text>
+          <InlineGrid columns={{ xs: 1, sm: 2, md: 2, lg: 4, xl: 5 }} gap="300">
+            {commandStats.map((stat) => (
+              <StatCard
+                key={stat.label}
+                label={stat.label}
+                value={stat.value}
+              />
+            ))}
+          </InlineGrid>
+          <Divider />
+          <Text as="h2" variant="headingLg">
+            Sales
+          </Text>
+          <InlineGrid columns={{ xs: 1, sm: 2, md: 2, lg: 4, xl: 5 }} gap="300">
+            {moneyStats.map((stat) => (
+              <StatCard
+                key={stat.label}
+                label={stat.label}
+                value={stat.value}
+              />
+            ))}
+          </InlineGrid>
+          <Divider />
+
+          <Text as="h2" variant="headingLg">
+            General
+          </Text>
+          <InlineGrid columns={{ xs: 1, sm: 2, md: 2, lg: 4, xl: 5 }} gap="300">
+            {generalStats.map((stat) => (
+              <StatCard
+                key={stat.label}
+                label={stat.label}
+                value={stat.value}
+              />
+            ))}
+          </InlineGrid>
+        </BlockStack>
+      </BlockStack>
+    </>
   );
 }

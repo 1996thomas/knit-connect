@@ -33,6 +33,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const email = formData.get("email");
   const phone = formData.get("phone");
   const zipcode = formData.get("zipcode");
+  const commissionRate = formData.get("commissionRate");
 
   if (
     typeof partnerName !== "string" ||
@@ -52,7 +53,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     typeof phone !== "string" ||
     phone.trim() === "" ||
     typeof zipcode !== "string" ||
-    zipcode.trim() === ""
+    zipcode.trim() === "" ||
+    typeof commissionRate !== "string" ||
+    commissionRate.trim() === ""
   ) {
     return { error: "Please fill out all required fields", status: 400 };
   }
@@ -67,6 +70,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     email: email.trim(),
     phone: phone.trim(),
     zipcode: zipcode.trim(),
+    commissionRate: parseFloat(commissionRate.trim()),
   };
 
   // Exemple de vérification dans la base
@@ -111,6 +115,7 @@ export default function PageComponent() {
   const [phone, setPhone] = useState("");
   const [zipcode, setZipcode] = useState("");
   const [country, setCountry] = useState("");
+  const [commissionRate, setCommissionRate] = useState("");
 
   const handleSelectChange = useCallback(
     (value: string) => setCountry(value),
@@ -122,7 +127,7 @@ export default function PageComponent() {
     if (actionData && actionData.success && actionData.partnerName) {
       const timer = setTimeout(() => {
         navigate(`/app/admin/partners`);
-      }, 5000);
+      }, 2000);
       return () => clearTimeout(timer);
     }
   }, [actionData, navigate]);
@@ -156,6 +161,19 @@ export default function PageComponent() {
                 autoComplete="off"
                 requiredIndicator
                 placeholder="shopify-store.myshopify.com"
+              />
+              <TextField
+                label="Commission Rate (%)"
+                name="commissionRate"
+                value={commissionRate}
+                onChange={setCommissionRate}
+                autoComplete="off"
+                requiredIndicator
+                placeholder="0"
+                step={0.5}
+                min={0}
+                max={100}
+                type="number"
               />
             </FormLayout.Group>
             <FormLayout.Group>

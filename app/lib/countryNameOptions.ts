@@ -7,4 +7,6 @@ export const countryNameOptions = [
   { value: "ES", label: "Spain" },
   { value: "NL", label: "Netherlands" },
   { value: "PT", label: "Portugal" },
+  { value: "LU", label: "Luxembourg" },
+  { value: "CH", label: "Switzerland" },
 ];

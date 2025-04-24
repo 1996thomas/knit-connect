@@ -14,6 +14,7 @@ export default function Index() {
   return (
     <>
       <NavMenu>
+        <Link url="/app/partner">Overview</Link>
         <Link url="/app/partner/products">Products</Link>
         <Link url="/app/partner/orders">Orders</Link>
         <Link url="/app/partner/payout">Payout</Link>

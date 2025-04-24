@@ -18,11 +18,12 @@ import {
 } from "../lib/fetch.server";
 import { OrderFromKnit, Product } from "app/types/products";
 import { decrypt } from "app/lib/encrypt";
-import { PhoneIcon } from "@shopify/polaris-icons";
+import { EmailIcon, PhoneIcon } from "@shopify/polaris-icons";
 import ProductsTabs from "app/components/Tabs/productsTabs";
 import OrdersTabs from "app/components/Tabs/ordersTabs";
 import AdminInfoCard from "app/components/Cards/adminInformationCard";
 import prisma from "../db.server";
+import PayoutTabs from "app/components/Tabs/payoutTabs";
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const apiVersion = process.env.API_VERSION || "";
@@ -35,19 +36,17 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
     return null;
   }
   const response = await fetch(
-    `${process.env.WEBSITE_URL}/api/knit-connect/get-partners`,
+    `${process.env.WEBSITE_URL}/api/knit-connect/get-partner`,
     {
-      method: "GET",
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${process.env.WEBSITE_TOKEN}`,
       },
+      body: JSON.stringify({ shop: partnerData.shop }),
     },
   );
-  const partnersFromKnit = await response.json();
-  const partnerFromKnit = partnersFromKnit.find(
-    (p: { shop_url: string }) => p.shop_url === partnerData?.shop,
-  );
+  const partnerFromKnit = await response.json();
 
   const decryptedAccessToken = decrypt(partnerData?.accessToken);
   const products = await fetchShopProduct(
@@ -57,7 +56,6 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
   );
 
   const productFromDB = await fetchProductFromDB(partnerData?.id || 0);
-  // Extraire tous les inventoryItemId uniques
   const inventoryItemIds = new Set<string>();
   for (const productEdge of products.edges) {
     const variantsEdges = productEdge.node.variants.edges;
@@ -88,24 +86,13 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
       }
     }),
   );
-
-  // Convertir le tableau résolu en un objet map (Record<string, any[]>)
   const inventoryLevels: Record<string, any[]> = {};
   inventoryLevelsArray.forEach(({ inventoryItemId, levels }) => {
     inventoryLevels[inventoryItemId] = levels;
   });
 
   const d = decrypt(partnerData.accessToken);
-  const orderResponse = await fetch(`${url}/api/knit-connect/orders`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ shop: partnerData.shop }),
-  });
-
-  const data: OrderFromKnit[] = await orderResponse.json();
+  const data = partnerFromKnit.existingPartner.Partner_Order || [];
   const orders = (
     await Promise.all(
       data.map(async (order: OrderFromKnit) => {
@@ -123,12 +110,14 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
       }),
     )
   ).filter((order) => order && order.order && order.order.id);
+  const payouts = partnerFromKnit.existingPartner.Payout || [];
   return {
     partner: { partnerData, partnerFromKnit },
     products,
     productFromDB,
     inventoryLevels,
     orders,
+    payouts,
     knitShop: shop,
   };
 };
@@ -138,6 +127,31 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const intent = formData.get("intent");
   const productId = formData.get("productId") as string;
   const partnerId = formData.get("partnerId") as string;
+  const period = formData.get("period") as string;
+  const fileBase64 = formData.get("fileBase64") as string;
+  const partner = formData.get("partner") as string;
+
+  if (intent === "payout") {
+    if (!fileBase64 || !period) {
+      return {
+        error: "Need a file and a period",
+        status: 400,
+      };
+    }
+    console.log(partner);
+    await fetch(`${process.env.WEBSITE_URL}/api/knit-connect/payout-create`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.WEBSITE_TOKEN}`,
+      },
+      body: JSON.stringify({
+        shop: partner,
+        fileBase64,
+        period,
+      }),
+    });
+  }
 
   if (intent === "delete") {
     const existingProduct = await prisma.product.findFirst({
@@ -153,8 +167,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       where: { id: productId },
     });
     return { deleted: productId };
-  } else {
-    // Action par défaut : ajout
+  }
+  if (intent === "add") {
     const existingProduct = await prisma.product.findFirst({
       where: { id: productId, partnerId: parseInt(partnerId, 10) },
     });
@@ -172,7 +186,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       },
     });
     return { newProduct };
+  } else if (intent !== "payout" && intent !== "delete" && intent !== "add") {
+    console.log(intent, "This intent is not supported");
+    return {
+      error: "This intent is not supported",
+      status: 400,
+    };
   }
+  return null;
 };
 
 export default function PartnerProducts() {
@@ -193,6 +214,7 @@ export default function PartnerProducts() {
   const products = loaderData?.products || { edges: [] };
   const productFromDB = loaderData?.productFromDB || [];
   const inventoryLevels = loaderData?.inventoryLevels || {};
+  const payouts = loaderData?.payouts || [];
   const [selected, setSelected] = useState(0);
 
   const handleTabChange = useCallback(
@@ -247,16 +269,16 @@ export default function PartnerProducts() {
     <div style={{ width: "100%" }}>
       <Page
         fullWidth
-        title={partner.partnerFromKnit?.shop_name || "Shop"}
+        title={partner.partnerFromKnit?.existingPartner.shop_name || "Shop"}
         secondaryActions={[
           {
-            icon: PhoneIcon,
+            icon: EmailIcon,
             content: "Contact partner",
-            url: `mailto:${partner.partnerFromKnit?.email}`,
+            url: `mailto:${partner.partnerFromKnit?.existingPartner.email}`,
             accessibilityLabel: "Contact partner",
           },
         ]}
-        subtitle={`All products available on ${partner.partnerFromKnit?.shop_name}`}
+        subtitle={`${partner.partnerFromKnit?.existingPartner.shop_url}`}
       >
         <Tabs tabs={tabs} selected={selected} onSelect={handleTabChange}>
           <Page fullWidth>
@@ -273,7 +295,17 @@ export default function PartnerProducts() {
             )}
             {selected === 2 && (
               <Text variant="headingLg" as="h2">
-                Payouts
+                <PayoutTabs
+                  orders={orders || []}
+                  payouts={payouts || []}
+                  knitShop={knitShop}
+                  commissionRate={
+                    partner.partnerFromKnit.existingPartner.commissionRate
+                  }
+                  partner={
+                    partner.partnerFromKnit.existingPartner.shop_url || ""
+                  }
+                />
               </Text>
             )}
             {selected === 3 && (
@@ -283,8 +315,10 @@ export default function PartnerProducts() {
                     Informations
                   </Text>
                 </InlineStack>
-                <InlineGrid columns={{ xs: 1, sm: 1, md: 3, lg: 3, xl: 3 }}>
-                  <AdminInfoCard info={partner.partnerFromKnit} />
+                <InlineGrid columns={{ xs: 1, sm: 1, md: 1, lg: 2, xl: 3 }}>
+                  <AdminInfoCard
+                    info={partner.partnerFromKnit.existingPartner}
+                  />
                 </InlineGrid>
               </BlockStack>
             )}

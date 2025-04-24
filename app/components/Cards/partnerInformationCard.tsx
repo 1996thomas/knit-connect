@@ -7,13 +7,19 @@ import {
   List,
   Text,
 } from "@shopify/polaris";
-import { EmailIcon, PhoneIcon, ProfileIcon } from "@shopify/polaris-icons";
+import {
+  CashDollarIcon,
+  EmailIcon,
+  PhoneIcon,
+  ProfileIcon,
+} from "@shopify/polaris-icons";
 
 export default function PartnerInfoCard({
   info,
 }: {
   info: {
     existingPartner: {
+      commissionRate: string;
       shop_name: string;
       shop_url: string;
       createdAt: string;
@@ -42,6 +48,9 @@ export default function PartnerInfoCard({
             {existingPartner?.shop_name}
           </Text>
           <InlineStack gap="100">
+            <Badge icon={CashDollarIcon} tone="info" size="small">
+              {`${existingPartner?.commissionRate}%`}
+            </Badge>
             <Badge tone="magic" size="small">
               {existingPartner?.shop_url}
             </Badge>
