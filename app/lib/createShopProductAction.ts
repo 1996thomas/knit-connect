@@ -1,9 +1,11 @@
 // app/actions/shopProductActions.server.ts
 import { authenticate } from "app/shopify.server";
 import { createShopProduct } from "./post.server";
+import { decrypt } from "./encrypt";
 
 export async function createShopProductAction(request: Request) {
   const { session } = await authenticate.admin(request);
+
   const formData = await request.formData();
   const node = JSON.parse(formData.get("node") as string);
   const action = formData.get("action") as string;
@@ -12,7 +14,10 @@ export async function createShopProductAction(request: Request) {
   }
 
   const adminShop = process.env.KNIT_SHOP || "";
-  const accessToken = process.env.KNIT_TOKEN || "";
+  const encr = await prisma.admin.findUnique({
+    where: { shop: adminShop },
+  });
+  const accessToken = decrypt(encr?.accessToken || "");
   const apiVersion = process.env.API_VERSION || "";
   const shop = session.shop || "";
 

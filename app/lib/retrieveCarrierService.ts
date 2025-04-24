@@ -1,9 +1,13 @@
 import { gql, GraphQLClient } from "graphql-request";
+import { decrypt } from "./encrypt";
 
 export async function retrieveCarrierService() {
   const apiVersion = process.env.API_VERSION || "2025-01";
   const shop = process.env.KNIT_SHOP || "";
-  const token = process.env.KNIT_TOKEN || "";
+  const encr = await prisma.admin.findUnique({
+    where: { shop },
+  });
+  const token = decrypt(encr?.accessToken || "");
   const expectedCallbackUrl = `${process.env.KNIT_URL}/api/cart/shipping-rates`;
   const carrierServiceRetrieveQuery = gql`
     query CarrierServiceList {

@@ -4,10 +4,14 @@ import {
   CarrierServiceCreateResponse,
 } from "app/types/products";
 import { gql, GraphQLClient } from "graphql-request";
+import { decrypt } from "./encrypt";
 
 const apiVersion = process.env.API_VERSION || "2025-01";
 const shop = process.env.KNIT_SHOP || "";
-const token = process.env.KNIT_TOKEN || "";
+const encr = await prisma.admin.findUnique({
+  where: { shop },
+});
+const token = decrypt(encr?.accessToken || "");
 
 const carrierServiceCreateMutation = gql`
   mutation CarrierServiceCreate($input: DeliveryCarrierServiceCreateInput!) {
