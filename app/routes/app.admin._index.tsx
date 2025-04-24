@@ -1,18 +1,8 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import {
-  BlockStack,
-  Card,
-  Divider,
-  InlineGrid,
-  List,
-  Page,
-  Text,
-} from "@shopify/polaris";
+import { BlockStack, Card, Divider, InlineGrid, Text } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
-import { fetchPartners, fetchShopProduct } from "../lib/fetch.server";
+import { fetchShopProduct } from "../lib/fetch.server";
 import { useLoaderData } from "@remix-run/react";
-import { registerCarrierService } from "app/lib/carrierService";
-import { decrypt } from "app/lib/encrypt";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -27,7 +17,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     },
   ).then((res) => res.json());
 
-  console.log(partners);
   const commissionRateAverage =
     partners.reduce(
       (acc: number, partner: any) => acc + parseFloat(partner.commissionRate),
@@ -122,6 +111,11 @@ export default function Index() {
     commissionRateAverage,
   } = useLoaderData<typeof loader>();
 
+  const salesRevenueFormatted = salesRevenue ?? 0;
+  const commissionRateFormatted = commissionRateAverage ?? 0;
+  const last30daysOrdersFormatted = last30daysOrdersCount ?? 0;
+  const allOrdersFormatted = allOrdersCount ?? 0;
+
   const commandStats = [
     { label: "Commands in progress", value: pendingOrders.length },
     { label: "Last 30 days", value: last30daysOrdersCount },
@@ -129,15 +123,18 @@ export default function Index() {
   ];
 
   const moneyStats = [
-    { label: "Total revenue sale (€)", value: `${salesRevenue.toFixed(0)}` },
+    {
+      label: "Total revenue sale (€)",
+      value: `${salesRevenueFormatted.toFixed(0)}`,
+    },
     // { label: "Number of products sold ", value: `${}` },
     {
       label: "Total commission (€)",
-      value: `${(salesRevenue * (commissionRateAverage / 100)).toFixed(0)}`,
+      value: `${(salesRevenueFormatted * (commissionRateFormatted / 100)).toFixed(0)}`,
     },
     {
       label: "Average commission (%)",
-      value: `${commissionRateAverage.toFixed(0)}`,
+      value: `${commissionRateFormatted.toFixed(0)}`,
     },
   ];
 

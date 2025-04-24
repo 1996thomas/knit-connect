@@ -30,7 +30,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
   const response = await admin.graphql(CREATE_PRODUCT);
   const responseJson = await response.json();
-  console.log(responseJson);
 };
 
 export default function AdminProductsTable({

@@ -10,7 +10,6 @@ export default function OrdersTabs({
   orders: Order[];
   knitShop: string;
 }) {
-  console.log(orders, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
   return (
     <BlockStack gap={"200"}>
       <Text variant="headingLg" as="h2">

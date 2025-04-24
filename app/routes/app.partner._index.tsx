@@ -180,7 +180,6 @@ export default function Dashboard() {
   useEffect(() => {
     // Pas d'annotation explicite : TS infère le bon type
     matchedProducts.forEach((product: Product) => {
-      console.log(product.node.totalInventory)
       if (product.status === "PENDING" || product.node.totalInventory < 9) {
         setProductWarning(true);
       }

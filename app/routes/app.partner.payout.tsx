@@ -53,7 +53,6 @@ export default function PageComponent() {
   const { orders, shop, knitContact, payouts, commissionRate } =
     useLoaderData<typeof loader>();
   const now = new Date();
-  console.log(shop);
   const yearRanges = getYearRanges();
 
   const filteredRanges = yearRanges.filter((range) => range.start <= now);

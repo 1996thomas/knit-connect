@@ -38,8 +38,6 @@ export default function PartnerPayoutCard({
   const totalMoney = group.orders.reduce((acc, order) => {
     return acc + parseFloat(order.order.totalPriceSet.presentmentMoney.amount);
   }, 0);
-  console.log(typeof totalMoney);
-  console.log(commissionRate);
   return (
     <Banner
       tone={
