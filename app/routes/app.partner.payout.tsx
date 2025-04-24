@@ -59,14 +59,18 @@ export default function PageComponent() {
 
   const ordersGroupedByPeriod = filteredRanges.map((range) => {
     const ordersInPeriod = orders.filter((order) => {
-      const date = new Date(order.order.createdAt);
-      return date >= range.start && date <= range.end;
+      // Vérifier que `order.order` est défini avant d'accéder à `createdAt`
+      const date = order.order ? new Date(order.order.createdAt) : null;
+      return date && date >= range.start && date <= range.end; // Assurez-vous que `date` est valide
     });
+
     const payoutInfo = payouts.find(
       (p: { period: string }) => p.period === range.key,
     );
+
     return { range, orders: ordersInPeriod, payout: payoutInfo };
   });
+
   const reversedGrouped = ordersGroupedByPeriod.reverse();
 
   return (
