@@ -2,10 +2,13 @@ import { gql, GraphQLClient } from "graphql-request";
 import { decrypt } from "./encrypt";
 const apiVersion = process.env.API_VERSION || "2025-01";
 const shop = process.env.KNIT_SHOP || "";
-const encr = await prisma.admin.findUnique({
-  where: { shop },
-});
-const token = decrypt(encr?.accessToken || "");
+
+async function getToken() {
+  const encr = await prisma.admin.findUnique({
+    where: { shop },
+  });
+  return decrypt(encr?.accessToken || "");
+}
 
 const carrierServiceUpdateMutation = gql`
   mutation CarrierServiceUpdate($input: DeliveryCarrierServiceUpdateInput!) {
@@ -25,6 +28,7 @@ const carrierServiceUpdateMutation = gql`
 `;
 
 export async function updateCarrierService(carrierId: string) {
+  const token = await getToken();
   const url = `https://${shop}/admin/api/${apiVersion}/graphql.json`;
   const client = new GraphQLClient(url, {
     headers: {
