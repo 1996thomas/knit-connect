@@ -76,10 +76,10 @@ export async function createShopProduct(
         values: option.values.map((value) => ({ name: value })),
       })),
       files: node.media.edges
-        .filter((edge) => edge.mediaContentType === "IMAGE")
+        .filter((edge) => edge.node.mediaContentType === "IMAGE")
         .map((edge) => ({
           alt: edge.node.alt,
-          contentType: edge.mediaContentType,
+          contentType: edge.node.mediaContentType,
           originalSource: edge.node.image.url || "",
         })),
       variants: node.variants.edges.map((edge) => ({

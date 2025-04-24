@@ -7,7 +7,7 @@ import { useLoaderData } from "@remix-run/react";
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   const partners = await fetch(
-    ` ${process.env.WEBSITE_URL}/api/knit-connect/get-partners`,
+    `${process.env.WEBSITE_URL}/api/knit-connect/get-partners`,
     {
       method: "GET",
       headers: {
@@ -22,6 +22,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       (acc: number, partner: any) => acc + parseFloat(partner.commissionRate),
       0,
     ) / partners.length;
+
   const products = await fetchShopProduct(
     session.shop,
     session.accessToken || "",
@@ -51,11 +52,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const last30days = new Date(today.setDate(today.getDate() - 30));
     return orderDate >= last30days;
   });
+
   const last30daysOrdersCount = last30daysorders.length;
   const allOrdersCount = orders.length;
+
   const salesRevenue = orders.reduce((acc: number, order: any) => {
     const orderPrice = parseFloat(order.totalPrice);
-    return acc + orderPrice;
+    return acc + (isNaN(orderPrice) ? 0 : orderPrice);
   }, 0);
 
   return {
@@ -111,6 +114,7 @@ export default function Index() {
     commissionRateAverage,
   } = useLoaderData<typeof loader>();
 
+  // Gestion des valeurs nulles/indéfinies avant l'utilisation de toFixed()
   const salesRevenueFormatted = salesRevenue ?? 0;
   const commissionRateFormatted = commissionRateAverage ?? 0;
   const last30daysOrdersFormatted = last30daysOrdersCount ?? 0;
@@ -118,8 +122,8 @@ export default function Index() {
 
   const commandStats = [
     { label: "Commands in progress", value: pendingOrders.length },
-    { label: "Last 30 days", value: last30daysOrdersCount },
-    { label: "All time", value: allOrdersCount },
+    { label: "Last 30 days", value: last30daysOrdersFormatted },
+    { label: "All time", value: allOrdersFormatted },
   ];
 
   const moneyStats = [
@@ -127,7 +131,6 @@ export default function Index() {
       label: "Total revenue sale (€)",
       value: `${salesRevenueFormatted.toFixed(0)}`,
     },
-    // { label: "Number of products sold ", value: `${}` },
     {
       label: "Total commission (€)",
       value: `${(salesRevenueFormatted * (commissionRateFormatted / 100)).toFixed(0)}`,
